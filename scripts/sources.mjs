@@ -1,0 +1,11 @@
+// Fuentes crudas de movilidad CDMX (SEMOVI, CC-BY-4.0).
+// Compartida por download-crudos.mjs (descarga cruda) y preprocess.mjs (agrega a limpio).
+export const SOURCES = [
+  { id: 'metro', url: 'https://datos.cdmx.gob.mx/dataset/f2046fd5-51b5-4876-b008-bd65d95f9a02/resource/0e8ffe58-28bb-4dde-afcd-e5f5b4de4ccb/download/0e8ffe58-28bb-4dde-afcd-e5f5b4de4ccb.csv', nombre: 'Afluencia diaria del Metro CDMX (Simple)', organismo: 'STC Metro', desde: '2010-01-01', detalle: 'por día, línea y estación' },
+  { id: 'ecobici', url: 'https://datos.cdmx.gob.mx/dataset/7f67dc90-f1a3-457d-a4cb-bc76c43aca61/resource/4df66c20-f969-4b3e-9bce-34987da33bc1/download/4df66c20-f969-4b3e-9bce-34987da33bc1.csv', nombre: 'Viajes diarios Ecobici (SEMOVI)', organismo: 'Ecobici', desde: '2024-03-01', detalle: 'por día' },
+  { id: 'rtp', url: 'https://datos.cdmx.gob.mx/dataset/84682374-1a55-42e0-9c45-c7d9b3ec1c99/resource/a527d822-58ca-4140-ba91-ede5f10d8cb3/download/a527d822-58ca-4140-ba91-ede5f10d8cb3.csv', nombre: 'Afluencia diaria RTP (desglosada)', organismo: 'RTP', desde: '2022-01-01', detalle: 'por día' },
+  { id: 'trenligero', url: 'https://datos.cdmx.gob.mx/dataset/ee806dd2-c919-46f2-858f-6a55a05b8ee6/resource/c6f15e48-791d-4ed6-adc3-8d93ed80a055/download/c6f15e48-791d-4ed6-adc3-8d93ed80a055.csv', nombre: 'Afluencia diaria Tren Ligero (desglosada)', organismo: 'STE', desde: '2022-01-01', detalle: 'por día' },
+  { id: 'cablebus', url: 'https://datos.cdmx.gob.mx/dataset/ee806dd2-c919-46f2-858f-6a55a05b8ee6/resource/176c0d20-0111-43bc-903c-d7e807ff37c0/download/176c0d20-0111-43bc-903c-d7e807ff37c0.csv', nombre: 'Afluencia diaria Cablebús (desglosada)', organismo: 'STE', desde: '2022-01-01', detalle: 'por día' },
+  { id: 'trolebus', url: 'https://datos.cdmx.gob.mx/dataset/ee806dd2-c919-46f2-858f-6a55a05b8ee6/resource/48fdccd2-f910-4328-a018-df25b6a05b0b/download/48fdccd2-f910-4328-a018-df25b6a05b0b.csv', nombre: 'Afluencia diaria Trolebús (desglosado)', organismo: 'STE', desde: '2022-01-01', detalle: 'por día' },
+  { id: 'metrobus', url: 'https://datos.cdmx.gob.mx/dataset/f0ff3759-5c5d-41fb-80cc-2a3c8bbab278/resource/f7943c47-835d-4078-93ea-906f64b72f3b/download/f7943c47-835d-4078-93ea-906f64b72f3b.csv', nombre: 'Afluencia diaria Metrobús (Simple)', organismo: 'Metrobús', desde: '2005-07-01', detalle: 'por día' },
+]

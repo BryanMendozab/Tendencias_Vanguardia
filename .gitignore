@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Datos crudos del pipeline (se regeneran con scripts/preprocess.mjs)
+.tmp-datos
+
+# Fuentes crudas descargadas (consulta local, se regeneran con scripts/download-crudos.mjs)
+data/crudos
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
