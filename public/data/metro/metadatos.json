@@ -3,7 +3,7 @@
   "licencia": "CC-BY-4.0-ESP",
   "fuentePortal": "https://datos.cdmx.gob.mx/",
   "organizacion": "Secretaría de Movilidad (SEMOVI)",
-  "generado": "2026-09-22T20:59:00.967Z",
+  "generado": "2026-09-23T06:56:27.767Z",
   "fuentes": [
     {
       "id": "metro",
@@ -53,7 +53,6 @@
     "metroDias": 6056,
     "metroLineas": [
       "Linea 1",
-      "Linea 12",
       "Linea 2",
       "Linea 3",
       "Linea 4",
@@ -62,20 +61,9 @@
       "Linea 7",
       "Linea 8",
       "Linea 9",
+      "Linea 12",
       "Linea A",
-      "Linea B",
-      "Línea 1",
-      "Línea 12",
-      "Línea 2",
-      "Línea 3",
-      "Línea 4",
-      "Línea 5",
-      "Línea 6",
-      "Línea 7",
-      "Línea 8",
-      "Línea 9",
-      "Línea A",
-      "Línea B"
+      "Linea B"
     ]
   },
   "registro": {

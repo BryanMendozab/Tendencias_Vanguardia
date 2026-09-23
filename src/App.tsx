@@ -11,7 +11,7 @@ import './App.css'
 
 type Periodo = { start: string; end: string }
 type PeriodoPick = { anio: string; mes: string }
-type Overlay = { values: number[]; offset?: number; dashed?: boolean; stroke?: string }
+type Overlay = { values: (number | null)[]; offset?: number; dashed?: boolean; stroke?: string }
 type StatsSerie = { valores: number[]; porDia: number[][]; max: number }
 
 const PALETA = ['#d9a05b', '#6aa5f0', '#5db7a0', '#a08ee6', '#d78bb0', '#7cc59a', '#9aa3b5']
@@ -70,9 +70,9 @@ function parseCsv(text: string): string[][] {
   return lines.map((line) => csvLine(line)).filter((row) => row.some((c) => c !== ''))
 }
 
-function SeriesChart({ values, labels, overlays = [], flagMask = [], peakLabel, unit }: { values: number[]; labels: string[]; overlays?: Overlay[]; flagMask?: boolean[]; peakLabel?: string; unit?: string }) {
+function SeriesChart({ values, labels, overlays = [], flagMask = [], peakLabel, unit }: { values: (number | null)[]; labels: string[]; overlays?: Overlay[]; flagMask?: boolean[]; peakLabel?: string; unit?: string }) {
   const all = overlays.flatMap((o) => o.values)
-  const max = Math.max(...values, ...all, 1)
+  const max = Math.max(...[...values, ...all].filter((v): v is number => v !== null), 1)
   const width = 700
   const height = 158
   const padL = 46
@@ -82,7 +82,19 @@ function SeriesChart({ values, labels, overlays = [], flagMask = [], peakLabel, 
   const x = (index: number) => padL + (maxIndex ? (index * (width - padL - padR)) / maxIndex : 0)
   const basY = height - 9
   const y = (v: number) => 10 + (1 - v / max) * (basY - 10)
-  const points = values.map((v, i) => `${x(i)},${y(v)}`).join(' ')
+  const puntos = (vs: (number | null)[], offset = 0): Array<[number, number] | null> => vs.map((v, i) => (v === null ? null : [x(i + offset), y(v)] as [number, number]))
+  const segmentos = (pts: Array<[number, number] | null>) => {
+    const out: Array<Array<[number, number]>> = []
+    let cur: Array<[number, number]> = []
+    for (const p of pts) {
+      if (p) cur.push(p)
+      else if (cur.length) { out.push(cur); cur = [] }
+    }
+    if (cur.length) out.push(cur)
+    return out
+  }
+  const dDe = (segs: Array<Array<[number, number]>>) => segs.map((s) => `M${s.map((p) => `${p[0]},${p[1]}`).join(' L')}`).join(' ')
+  const polyDe = (pts: Array<[number, number]>) => pts.map((p) => `${p[0]},${p[1]}`).join(' ')
   const labelsShown = labels.length <= 14
   const labelsList = labelsShown ? labels : labels.filter((_, i) => i % Math.ceil(labels.length / 14) === 0)
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => f * max)
@@ -102,16 +114,19 @@ function SeriesChart({ values, labels, overlays = [], flagMask = [], peakLabel, 
             <text x={padL - 6} y={y(t) + 3} textAnchor="end" className="axis-label">{fmtNum(t)}</text>
           </g>
         ))}
-        {overlays.map((overlay, oi) => (
-          <polyline key={`overlay-${oi}`} points={overlay.values.map((v, i) => `${x(i + (overlay.offset ?? 0))},${y(v)}`).join(' ')} fill="none" stroke={overlay.stroke ?? '#9aa3b5'} strokeWidth={overlay.offset ? 2 : 2.5} strokeDasharray={overlay.dashed ? '6 5' : undefined} strokeLinecap="round" strokeLinejoin="round" opacity={0.9} />
+        {overlays.map((overlay, oi) => {
+          const segs = segmentos(puntos(overlay.values, overlay.offset ?? 0))
+          return segs.length ? <path key={`overlay-${oi}`} d={dDe(segs)} fill="none" stroke={overlay.stroke ?? '#9aa3b5'} strokeWidth={overlay.offset ? 2 : 2.5} strokeDasharray={overlay.dashed ? '6 5' : undefined} strokeLinecap="round" strokeLinejoin="round" opacity={0.9} /> : null
+        })}
+        {segmentos(puntos(values)).map((seg, si) => (
+          <polygon key={`area-${si}`} points={`${padL},${basY} ${polyDe(seg)} ${width - padR},${basY}`} fill="url(#area-fill)" />
         ))}
-        <polygon points={`${padL},${basY} ${points} ${width - padR},${basY}`} fill="url(#area-fill)" />
-        <polyline points={points} fill="none" stroke="#d9a05b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={dDe(segmentos(puntos(values)))} fill="none" stroke="#d9a05b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         {values.map((value, index) => (
-          <circle key={index} cx={x(index)} cy={y(value)} r={flagMask[index] ? 4 : 3} className={flagMask[index] ? 'chart-dot flag' : 'chart-dot'} fill={flagMask[index] ? '#d68a82' : undefined} />
+          value === null ? null : <circle key={index} cx={x(index)} cy={y(value)} r={flagMask[index] ? 4 : 3} className={flagMask[index] ? 'chart-dot flag' : 'chart-dot'} fill={flagMask[index] ? '#d68a82' : undefined} />
         ))}
       </svg>
-      <div className="chart-labels" style={{ paddingLeft: padL, paddingRight: padR }}>{labelsList.map((label) => <span key={label}>{label}</span>)}</div>
+      <div className="chart-labels" style={{ paddingLeft: padL, paddingRight: padR }}>{labelsList.map((label, i) => <span key={i}>{label}</span>)}</div>
       {peakLabel ? <div className="chart-peak-above">{peakLabel}</div> : null}
     </div>
   )
@@ -177,6 +192,19 @@ function Meter({ fraccion }: { fraccion: number }) {
   return <div className={`meter ${n.clase}`}><div className="meter-fill" style={{ width: `${Math.min(fraccion, 1) * 100}%` }} /></div>
 }
 
+function ordenLineas(lista: string[]) {
+  const token = (nombre: string) => nombre.replace(/^Linea\s+/i, '')
+  const esNum = (n: string) => n.trim() !== '' && Number.isInteger(Number(n))
+  return lista.sort((a, b) => {
+    const ta = token(a); const tb = token(b)
+    const na = esNum(ta); const nb = esNum(tb)
+    if (na && nb) return Number(ta) - Number(tb)
+    if (na && !nb) return -1
+    if (!na && nb) return 1
+    return ta.localeCompare(tb)
+  })
+}
+
 function App() {
   const [diario, setDiario] = useState<PuntoDiario[]>([])
   const [linea, setLinea] = useState<PuntoLinea[]>([])
@@ -207,7 +235,7 @@ function App() {
   }, [])
 
   const modos = useMemo(() => ['Todos', ...new Set(diario.map((r) => r.modo))].sort((a, b) => (a === 'Todos' ? -1 : b === 'Todos' ? 1 : a.localeCompare(b))), [diario])
-  const lineas = useMemo(() => [...new Set(linea.map((r) => r.linea))].sort(), [linea])
+  const lineas = useMemo(() => ordenLineas([...new Set(linea.map((r) => r.linea))]), [linea])
   const anios = useMemo(() => [...new Set(diario.map((r) => r.fecha.slice(0, 4)))].sort(), [diario])
 
   const hoyDow = new Date().getDay()
@@ -255,6 +283,13 @@ function App() {
   const stat2 = useMemo(() => resumenPeriodo(rows2, (r) => r.afluencia, p2.start, p2.end), [rows2, p2])
   const serieP1 = useMemo(() => serieMensual(rows1, (r) => r.afluencia), [rows1])
   const serieP2 = useMemo(() => serieMensual(rows2, (r) => r.afluencia), [rows2])
+  const alineadoPeriodos = useMemo(() => {
+    const v1 = new Array(12).fill(null) as (number | null)[]
+    const v2 = new Array(12).fill(null) as (number | null)[]
+    for (const m of serieP1) v1[Number(m.label.slice(5)) - 1] = (v1[Number(m.label.slice(5)) - 1] ?? 0) + m.value
+    for (const m of serieP2) v2[Number(m.label.slice(5)) - 1] = (v2[Number(m.label.slice(5)) - 1] ?? 0) + m.value
+    return { labels: MESES, v1, v2 }
+  }, [serieP1, serieP2])
 
   const mensual = useMemo(() => serieMensual(daily, (r) => r.afluencia), [daily])
   const regresion = useMemo(() => regresionLineal(mensual.map((m) => m.value)), [mensual])
@@ -906,9 +941,9 @@ function App() {
               </section>
 
               <section className="main-grid">
-                <Panel titulo="Comparación de periodos" descripcion={`mensual · ${tipoHistorico}`}>
+                <Panel titulo="Comparación de periodos" descripcion={`meses del año alineados · ${tipoHistorico}`}>
                   <>
-                    <SeriesChart values={serieP1.map((m) => m.value)} labels={serieP1.map((m) => MESES[Number(m.label.slice(5)) - 1])} overlays={[{ values: serieP2.map((m) => m.value), stroke: '#6aa5f0' }]} unit="viajes" />
+                    <SeriesChart values={alineadoPeriodos.v1} labels={alineadoPeriodos.labels} overlays={[{ values: alineadoPeriodos.v2, stroke: '#6aa5f0' }]} unit="viajes" />
                     <div className="multi-legend">
                       <span><i style={{ background: '#d9a05b' }} />{etiqueta(per1)}</span>
                       <span><i style={{ background: '#6aa5f0' }} />{etiqueta(per2)}</span>

@@ -99,6 +99,9 @@ async function main() {
   const idxLinea = metroHeader.indexOf('linea')
   const idxEstacion = metroHeader.indexOf('estacion')
   const idxAfluencia = metroHeader.indexOf('afluencia')
+  // La fuente publica el mismo nombre de linea con y sin acento (y con Unicode
+  // descompuesto: "Li\u0301nea"). Se normaliza a una sola grafia antes de agrupar.
+  const nombreLinea = (valor) => clean(valor).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim()
   const byDate = new Map(); const byDateLinea = new Map(); const byKey = new Map()
   let metroN = 0
   for (const r of metroData) {
@@ -108,12 +111,22 @@ async function main() {
     metroN += 1
     if (!byDate.has(fecha)) byDate.set(fecha, 0)
     byDate.set(fecha, byDate.get(fecha) + aflu)
-    const lineaKey = `${fecha}|${r[idxLinea]}`
+    const linea = nombreLinea(r[idxLinea])
+    const lineaKey = `${fecha}|${linea}`
     byDateLinea.set(lineaKey, (byDateLinea.get(lineaKey) ?? 0) + aflu)
-    const key = `${fecha}|${r[idxLinea]}|${r[idxEstacion]}`
+    const key = `${fecha}|${linea}|${r[idxEstacion]}`
     byKey.set(key, (byKey.get(key) ?? 0) + aflu)
   }
-  const metroLineas = [...new Set(metroData.map((r) => r[idxLinea]).filter(Boolean))].sort()
+  const metroLineas = [...new Set(metroData.map((r) => nombreLinea(r[idxLinea])).filter(Boolean))].sort((a, b) => {
+    const token = (nombre) => nombre.replace(/^Linea\s+/i, '')
+    const esNum = (n) => n.trim() !== '' && Number.isInteger(Number(n))
+    const ta = token(a); const tb = token(b)
+    const na = esNum(ta); const nb = esNum(tb)
+    if (na && nb) return Number(ta) - Number(tb)
+    if (na && !nb) return -1
+    if (!na && nb) return 1
+    return ta.localeCompare(tb)
+  })
   let metroLineaCsv = 'fecha,linea,afluencia\n'
   for (const [key, value] of [...byDateLinea.entries()].sort()) metroLineaCsv += `${key.split('|').join(',')},${value}\n`
   await writeFile(join(OUT, 'metro_linea_diario.csv'), metroLineaCsv)
